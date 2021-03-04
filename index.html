@@ -1,0 +1,158 @@
+
+<html>
+    <head>
+        <title>Sequence Diagram Creator.</title>
+        <link href="site.css" rel="stylesheet" type="text/css">
+    </head>
+    
+    <body>
+    
+        <div id="page">
+            <div id="left-column">
+                <div id="header">
+                    <h1>Sequence diagram creator.</h1>
+                    <pre id="error"></pre>
+                </div>
+                <div id="content">
+                    <textarea id="diagram-source">
+Title: - SUGGESTED SEQUENCING, WITH AUTHORISATION METHODS -
+
+participant Client\nSites as C
+participant Identity\nService as I
+participant API\nGateway as G
+participant Business\nServices as S
+participant Data\nServices as D
+participant Postgres\nDatabase as DB
+
+Note over C,G : HTTPS
+C -> I : User, Password
+I --> C : JWT
+C -> G : Auth header (Bearer JWT)
+
+Note over G,D : HTTP
+G -> S : Headers
+S -> D : Headers
+
+Note over D,DB : TCP/IP
+D -> DB : Connection\nString
+
+Note right of DB: Stored procs\n and views
+DB --> D :
+D --> S :
+S --> G :
+G --> C :
+                    </textarea><br />
+                    <input id="download" type="submit" value="Download SVG" />
+                </div>
+                <div id="footer">
+                    <div id="instructions">
+                        <a id="help" href="#" target="_blank">General Help</a>
+                    </div>
+    
+                    <div id="help-text">
+                        <ul>
+                            <li>
+                                It's useful to view the syntax, hence the pre-filled example.
+                                There is also a link in the footer to
+                                <a href="https://bramp.github.io/js-sequence-diagrams/">js-sequence-diagrams</a>
+                                where you can scroll down to see a syntax diagram.
+                            </li>
+                            <li>
+                                <em>Participants</em> are optional.
+                                <em>Actors</em> (horizontal) appear in the order they are first mentioned,
+                                so specifying them as participants enforces a particular ordering.
+                            </li>
+                            <li>
+                                The <em>as C</em> part of a participant declaration is optional.
+                                It can be used as an <em>alias</em> to simplify writing the sequence entries that follow.
+                            </li>
+                            <li>
+                                Actors must always be an exact, case-sensitive match to be treated as being the same ones.
+                                This is one reason why participants with aliases is often helpful, for brevity and
+                                consistency.
+                            </li>
+                            <li>
+                                There are options to share a diagram below the source text area.
+                                You can either <em>download an SVG</em> or <em>get a data: link</em>.
+                            </li>
+                            <li>
+                                The data link is a (long) URL which is put on the clipboard.
+                                You'll need to open a new tab yourself and paste in the clipboard contents
+                                (or send them in an email, Slack, Teams, etc).
+                            </li>
+                        </ul>
+                    </div>
+                    Diagramming by <a href="https://bramp.github.io/js-sequence-diagrams/" target="_blank">js-sequence-diagrams.</a>
+                </div>
+            </div>
+    
+            <div id="right-column">
+                <div id="diagram"></div>
+            </div>
+        </div>
+    
+        <script src="./jquery.min.js"></script>
+        <script>
+            function redraw() {
+                try {
+                    $("#error").html("").hide();
+                    diagram = Diagram.parse($("#diagram-source").val());
+                    $("#diagram").html("");
+                    diagram.drawSVG("diagram", { theme: "simple" });
+                } catch (error) {
+                    $("#error").html(error.message).show();
+                }
+            };
+    
+            function getSVG() {
+                var svg = $("#diagram").find("svg")[0];
+                var width = parseInt(svg.width.baseVal.value);
+                var height = parseInt(svg.height.baseVal.value);
+                var data = $("#diagram-source").val();
+                var xml = '<?xml version="1.0" encoding="utf-8" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd"><svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '" xmlns:xlink="http://www.w3.org/1999/xlink"><source><![CDATA[' + data + "]]></source>" + svg.innerHTML + "</svg>";
+                return xml;
+            }
+    
+            function download() {
+                var lnk = document.createElement("a");
+                lnk.download = "sequence-diagram.svg";
+                lnk.href = "data:image/svg+xml," + encodeURIComponent(getSVG());
+                document.body.appendChild(lnk);
+                lnk.click();
+                document.body.removeChild(lnk);
+                delete lnk;
+            }
+    
+            $(document).ready(function () {
+                var timeout;
+    
+                redraw();
+    
+                $("#diagram-source").keydown(function (e) {
+                    // Keep the diagram up to date.
+                    clearTimeout(timeout);
+                    timeout = setTimeout(redraw, 750);
+                });
+    
+                $("#help").click(function (e) {
+                    // General help.
+                    e.preventDefault();
+                    $("#help-text").toggle();
+                    return false;
+                });
+    
+                $("#download").click(function (e) {
+                    // Download as an SVG file.
+                    e.preventDefault();
+                    download();
+                    return false;
+                });
+            });
+        </script>
+        <script src="./webfont.js"></script>
+        <script src="./snap.svg-min.js"></script>
+        <script src="./underscore-min.js"></script>
+        <script src="./sequence-diagram-min.js"></script>
+    </body>
+</html>
+    
